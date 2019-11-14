@@ -1,0 +1,35 @@
+select contest_id, hacker_id, name, sum(ts) ts, sum(tas) tas, sum(tv) tv, sum(tuv) tuv
+from (
+    select c.*, ts, tas, tv, tuv
+    from contests c
+    left join (
+        select contest_id, sum(ts) ts, sum(tas) tas, sum(tv) tv, sum(tuv) tuv
+        from (
+        select co.college_id, contest_id, ts, tas, tv, tuv
+        from colleges co
+        left join (    
+            select college_id, sum(total_submissions) ts, sum(total_accepted_submissions) tas,                  sum(total_views) tv, sum(total_unique_views) tuv
+            from (
+                    select ch.challenge_id, college_id, total_submissions,                              total_accepted_submissions,                  total_views, total_unique_views 
+                    from challenges ch
+                    left join (select challenge_id, sum(total_submissions) as total_submissions,
+                                sum(total_accepted_submissions) as total_accepted_submissions from                              submission_stats
+                                group by challenge_id) ss
+                    on ch.challenge_id = ss.challenge_id
+                    left join (select challenge_id, sum(total_views) as total_views,
+                                sum(total_unique_views) as total_unique_views from view_stats
+                                group by challenge_id) vs
+                   on ch.challenge_id = vs.challenge_id
+                )a
+            group by college_id
+            ) aa
+        on co.college_id = aa.college_id
+        )aaa
+        group by contest_id
+    ) f
+    on c.contest_id = f.contest_id
+    )x
+    
+group by contest_id, hacker_id, name
+having sum(ts) is not null or sum(tas)is not null or 
+sum(tv) is not null or sum(tuv) is not null
